@@ -142,7 +142,7 @@ You can also check manually anytime with **Check for Updates** on the Config tab
 Track which crafting blueprints you already own, and see it reflected in-game: owned items get a blue `[Owned]` tag in mission POTENTIAL BLUEPRINTS lists, so a contract listing tells you at a glance what you still need to hunt down.
 
 - **Two lists, one shuttle.** Available blueprints on the left, your owned set on the right. Select items and move them with the arrow buttons. The owned set persists across restarts.
-- **Find things fast.** A search box narrows both lists, and the **Mission / Type / Class / Size / Grade** filters cut the available list down by where a blueprint drops and what kind of item it is (Armor, FPS Weapon, Ship Item, and so on).
+- **Find things fast.** A search box narrows both lists, and the **Mission / Type / Class / Size / Grade** filters cut the available list down by where a blueprint drops and what kind of item it is (Armor, Ammo, FPS Weapon, Ship Item, and so on).
 - **Scan Logs for Owned Blueprints** fills the owned set automatically: it reads your Star Citizen log files for the blueprints you've received in-game and marks them owned. Only blueprints received since your last scan are imported, so re-running it any time is cheap. The scan needs your Star Citizen install path set on the Config tab.
 - **Apply Owned Tags** re-weaves the `[Owned]` tags into your loaded strings after you change the owned set. Like the other action buttons, it turns **red** when your owned list has changes the table hasn't picked up yet and **green** once everything matches.
 - The strings table's **Owned** column still shows a star and sorts owned-first, but it's read-only now; ownership is managed from this tab.
