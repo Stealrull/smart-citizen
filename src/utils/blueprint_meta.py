@@ -112,7 +112,18 @@ _ITEM_NAME_PREFIX = "item_Name"
 _TYPE_FPS_WEAPON = "FPS Weapon"
 _TYPE_SHIP_WEAPON = "Ship Weapon"
 _TYPE_ARMOR = "Armor"
+_TYPE_AMMO = "Ammo"
 _TYPE_OTHER = "Other"
+
+# Ammo/magazine loc keys always end in "_mag" (optionally "_empty"/"_filled",
+# e.g. the salvage canister pair item_Name..._salvage_mag_empty /
+# ..._salvage_mag_filled) (#249). Anchored to the end of the key rather than a
+# bare "_mag" substring match: several weapon keys carry "_rifle_"/"_pistol_"/
+# etc tokens that would otherwise win the FPS Weapon bucket first (e.g.
+# item_Namebehr_rifle_ballistic_01_mag -> "P4-AR Magazine"), and an end anchor
+# also rules out unrelated items that merely contain "mag" mid-key (e.g.
+# item_NameFlair_Poster_SM_Mag_Cover, a physical magazine poster, not ammo).
+_AMMO_KEY_SUFFIXES = ("_mag", "_mag_empty", "_mag_filled")
 
 # Friendly labels for the component type codes that appear right after
 # ``item_Name`` / ``item_Name_`` in a component loc key. Codes not in this map
@@ -248,6 +259,8 @@ def blueprint_type_from_key(key: str):
     if t:
         return t
     kl = key.lower()
+    if kl.endswith(_AMMO_KEY_SUFFIXES):
+        return _TYPE_AMMO
     if any(w in kl for w in _FPS_WEAPON_WORDS):
         return _TYPE_FPS_WEAPON
     if any(w in kl for w in _ARMOR_GEAR_WORDS) or any(w in kl for w in _ARMOR_EXTRA_WORDS):

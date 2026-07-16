@@ -154,6 +154,25 @@ def test_blueprint_type_armor_core_pieces():
     assert blueprint_type_from_key("item_Name_gys_highscore_01_01_01") is None
 
 
+def test_blueprint_type_ammo_and_magazines():
+    """Ammo/magazine blueprints (#249) get their own "Ammo" bucket instead of
+    landing in "Other" (or, worse, "FPS Weapon" — many mag keys carry a
+    "_rifle_"/"_pistol_"/etc token that would otherwise win first)."""
+    assert blueprint_type_from_key("item_Namebehr_rifle_ballistic_01_mag") == "Ammo"
+    assert blueprint_type_from_key("item_NameGMNI_smg_ballistic_01_mag") == "Ammo"
+    assert blueprint_type_from_key("item_Nameklwe_lmg_energy_01_mag") == "Ammo"
+    assert blueprint_type_from_key("item_Nameutfl_crossbow_ballistic_01_mag") == "Ammo"
+    # Salvage/healing canister pairs — "_mag" with an _empty/_filled state suffix.
+    assert blueprint_type_from_key("item_Namegrin_multitool_01_salvage_mag_empty") == "Ammo"
+    assert blueprint_type_from_key("item_Namegrin_multitool_01_salvage_mag_filled") == "Ammo"
+    assert blueprint_type_from_key("item_Namegrin_multitool_01_healing_mag") == "Ammo"
+    # Keys that merely contain "mag" mid-string (not a trailing _mag token) are
+    # NOT ammo — e.g. a physical magazine/poster item.
+    assert blueprint_type_from_key("item_NameFlair_Poster_SM_Mag_Cover") is None
+    # A recognized ship-component code still wins first (unaffected by this bucket).
+    assert blueprint_type_from_key("item_NameSHLD_ACOM_S01") == "Shield"
+
+
 def test_blueprint_type_gys_jacket_and_pants():
     """Carnifex set torso/leg pieces reported showing up in "Other" — the
     "gys" manufacturer keys these as jacket/pants, not core/legs/armor."""
