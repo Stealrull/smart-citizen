@@ -201,11 +201,11 @@ class TestMergerAppliesCorruptedBase:
         src.write_text("a=1\nb=2\n", encoding="utf-8")
         out = tmp_path / "out.ini"
         merge_ini_files(src, {}, out)
-        assert out.read_text(encoding="utf-8") == "a=1\nb=2\n"
+        assert out.read_text(encoding="utf-8-sig") == "a=1\nb=2\n"
 
         src.write_text("a=1\nb=2", encoding="utf-8")  # no trailing newline
         merge_ini_files(src, {}, out)
-        assert out.read_text(encoding="utf-8") == "a=1\nb=2"
+        assert out.read_text(encoding="utf-8-sig") == "a=1\nb=2"
 
 
 # ── Sibling #251-class guards (corrupt bytes in app-written state files) ──────

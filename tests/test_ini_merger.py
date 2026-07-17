@@ -28,7 +28,11 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.merger.ini_merger import merge_sources_by_hierarchy, sync_key_variants  # noqa: E402
+from src.merger.ini_merger import (  # noqa: E402
+    merge_ini_files,
+    merge_sources_by_hierarchy,
+    sync_key_variants,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -247,3 +251,54 @@ class TestSyncKeyVariantsDomainScope:
         result = merge_sources_by_hierarchy(sources, ["global"])
         assert result["Stanton2"] == "Crusader"
         assert result["Stanton_2"] == "Stanton (Star)"
+
+
+class TestMergeIniFilesBom:
+    """#261: applying wrote the game's global.ini as plain UTF-8 with no BOM.
+
+    Data.p4k's own extracted global.ini ships with a UTF-8 BOM, and Star
+    Citizen's own loc-string loader appears to need it to reliably detect
+    the file's encoding — without it, the game can fail to resolve the
+    ENTIRE loc table (every string shows its raw @KeyName placeholder)
+    rather than degrading per-key. Confirmed on a real install: after
+    Apply, the whole in-game UI showed raw loc keys; deleting the applied
+    file restored correct text. merge_ini_files now writes utf-8-sig
+    (BOM included), matching Data.p4k's own format byte-for-byte.
+    """
+
+    def test_output_starts_with_utf8_bom(self, tmp_path):
+        src = tmp_path / "base.ini"
+        src.write_text("a=1\n", encoding="utf-8")
+        out = tmp_path / "out.ini"
+        merge_ini_files(src, {}, out)
+        assert out.read_bytes().startswith(b"\xef\xbb\xbf")
+
+    def test_output_has_bom_even_when_source_lacks_one(self, tmp_path):
+        """The output BOM must not depend on the source having one — a
+        cached base.ini that was hand-edited or re-saved without a BOM
+        must still produce a correctly-BOM'd applied file."""
+        src = tmp_path / "base.ini"
+        src.write_bytes(b"a=1\n")  # deliberately no BOM
+        out = tmp_path / "out.ini"
+        merge_ini_files(src, {}, out)
+        assert out.read_bytes().startswith(b"\xef\xbb\xbf")
+
+    def test_source_bom_does_not_leak_into_first_key_name(self, tmp_path):
+        """A BOM'd source (Data.p4k's native extraction format) must not
+        prepend the BOM character onto the first key's name — that would
+        silently corrupt the first key in the output on every apply."""
+        src = tmp_path / "base.ini"
+        src.write_bytes("﻿FirstKey=first value\nSecondKey=second\n".encode("utf-8"))
+        out = tmp_path / "out.ini"
+        merge_ini_files(src, {"FirstKey": "overridden"}, out)
+        text = out.read_text(encoding="utf-8-sig")
+        assert "FirstKey=overridden" in text
+        assert "﻿FirstKey" not in text
+
+    def test_values_and_structure_preserved_alongside_bom(self, tmp_path):
+        src = tmp_path / "base.ini"
+        src.write_text("a=1\nb=2\n; a comment\nc=3\n", encoding="utf-8")
+        out = tmp_path / "out.ini"
+        merge_ini_files(src, {"b": "overridden"}, out)
+        text = out.read_text(encoding="utf-8-sig")
+        assert text == "a=1\nb=overridden\n; a comment\nc=3\n"

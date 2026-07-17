@@ -238,8 +238,9 @@ def merge_ini_files(
     """Merge source INI with overrides, preserving all lines.
 
     Reads source file line-by-line, replaces values for matching keys,
-    and writes to output as UTF-8. Strips comma-based metadata suffixes
-    (e.g., "key,P") from keys to match normalized override keys.
+    and writes to output as UTF-8 **with a BOM** (#261). Strips comma-based
+    metadata suffixes (e.g., "key,P") from keys to match normalized
+    override keys.
 
     Note: Variant key syncing happens in merge_sources_by_hierarchy(), so
     the overrides_dict already has synced values when this is called.
@@ -260,9 +261,12 @@ def merge_ini_files(
     try:
         # read_ini_text (#251) tolerates non-UTF-8 content — the previous
         # strict open() meant one corrupt byte in base.ini failed the whole
-        # Apply to Game. Normalize newlines to match the old open() default
-        # (universal newlines translated \r\n and \r to \n on read), then
-        # re-attach a trailing \n per line like file iteration yielded.
+        # Apply to Game. It's utf-8-sig-aware, so a source BOM (Data.p4k's
+        # own extracted base.ini has one) is stripped rather than leaked
+        # into the first key's name. Normalize newlines to match the old
+        # open() default (universal newlines translated \r\n and \r to \n
+        # on read), then re-attach a trailing \n per line like file
+        # iteration yielded.
         source_lines = (
             read_ini_text(source_path)
             .replace('\r\n', '\n').replace('\r', '\n')
@@ -276,7 +280,15 @@ def merge_ini_files(
         else:
             trailing_newline = False
 
-        with open(output_path, 'w', encoding='utf-8') as outfile:
+        # utf-8-sig, NOT utf-8 (#261): Star Citizen's own loc-string loader
+        # appears to need the BOM to reliably detect the file's encoding;
+        # without it the game can fail to resolve every key (shown as raw
+        # @KeyName placeholders) rather than degrading per-key. Every prior
+        # release wrote plain utf-8 (no BOM) here; our own readers are
+        # utf-8-sig-aware so they never noticed the mismatch, but the
+        # game's own parser does — see validate_applied_file's BOM check
+        # for the safety net half of this fix.
+        with open(output_path, 'w', encoding='utf-8-sig') as outfile:
             for i, line_rstrip in enumerate(source_lines):
                 # Match the old per-line shape: every line ended with '\n'
                 # except a final line with no trailing newline.
